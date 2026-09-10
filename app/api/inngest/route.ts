@@ -1,10 +1,11 @@
 import { serve } from "inngest/next";
 import { inngest } from "@/lib/inngest/client";
 import { runWorkflow } from "@/lib/inngest/functions";
+import { dispatchScheduledWorkflows } from "@/lib/inngest/scheduler";
 
 export const maxDuration = 300;
 
 export const { GET, POST, PUT } = serve({
   client: inngest,
-  functions: [runWorkflow],
+  functions: [runWorkflow, dispatchScheduledWorkflows],
 });
