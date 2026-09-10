@@ -4,32 +4,39 @@ AI-powered workflow automation platform based on the Nodebase architecture descr
 
 ## Current build
 
-The repository now contains the first working application foundation:
+AutoNoder now contains an end-to-end application core:
 
 - Next.js + TypeScript App Router
-- Responsive AutoNoder dashboard
-- Workflow catalog
-- React Flow visual workflow editor with starter nodes and connections
-- Prisma/PostgreSQL data model for users, workflows, credentials, and executions
-- Better Auth email/password server integration
-- Encrypted credential utility using AES-256-GCM
-- Workflow validation and topological execution engine
-- Authenticated workflow API boundary
-- Inngest durable workflow execution endpoint
+- Responsive dashboard and workflow catalog
+- React Flow visual workflow editor
+- Persistent workflow create/read/update/delete API
+- Better Auth email/password sign-up and sign-in UI
+- Prisma/PostgreSQL data model for users, auth sessions, workflows, credentials, and executions
+- AES-256-GCM credential encryption utility
+- Graph validation and topological workflow execution engine
+- Real HTTP Request executor
+- OpenAI and Anthropic AI executor adapters
+- Persisted execution records with success/failure states
+- Execution history UI
+- Inngest durable/background workflow execution boundary
+- Automated GitHub Actions build check
 - Environment-variable contract for database, auth, AI, payments, Inngest, and observability services
 
 ## Architecture direction
 
 The implementation follows the supplied Part 1 and Part 2 specification: workflows are represented as nodes and connections, execution is ordered through the graph, and node behavior is delegated to registered executors. Inngest is the durable/background execution boundary, Prisma is the persistence layer, and provider credentials are isolated from workflow definitions.
 
-## Setup
+## Local setup
 
 1. Install dependencies with `npm install`.
 2. Create `.env.local` from `.env.example`.
-3. Configure `DATABASE_URL` and `BETTER_AUTH_SECRET`.
-4. Run `npm run db:push` and `npm run dev`.
+3. Configure `DATABASE_URL`, `BETTER_AUTH_SECRET`, and `BETTER_AUTH_URL`.
+4. Run `npm run db:generate`.
+5. Run `npm run db:push`.
+6. Start the app with `npm run dev`.
+7. Open `/sign-in`, create an account, then create a workflow from the dashboard.
 
-External AI, payment, observability, and hosted Inngest functionality become active when their corresponding credentials are configured.
+For AI execution, configure `OPENAI_API_KEY` or `ANTHROPIC_API_KEY`. Hosted Inngest, Polar, Sentry, and additional production integrations activate when their corresponding credentials are configured.
 
 ## Source specification
 
