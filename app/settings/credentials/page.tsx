@@ -2,7 +2,7 @@
 
 import { FormEvent, useEffect, useState } from "react";
 import Link from "next/link";
-import { ArrowLeft, KeyRound, Loader2, Plus, ShieldCheck } from "lucide-react";
+import { ArrowLeft, KeyRound, Loader2, Plus, ShieldCheck, Trash2 } from "lucide-react";
 
 type Credential = { id: string; name: string; provider: string; createdAt: string };
 
@@ -13,6 +13,7 @@ export default function CredentialsPage() {
   const [value, setValue] = useState("");
   const [busy, setBusy] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState<string | null>(null);
   const [message, setMessage] = useState("");
 
   async function load() {
@@ -27,18 +28,24 @@ export default function CredentialsPage() {
   useEffect(() => { void load(); }, []);
 
   async function submit(event: FormEvent) {
-    event.preventDefault();
-    setSaving(true);
-    setMessage("");
+    event.preventDefault(); setSaving(true); setMessage("");
     const response = await fetch("/api/credentials", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
+      method: "POST", headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ name, provider, data: { apiKey: value } }),
     });
     const data = await response.json();
     if (!response.ok) setMessage(data.error || "Unable to save credential.");
     else { setCredentials((current) => [data.credential, ...current]); setName(""); setValue(""); setMessage("Credential saved securely."); }
     setSaving(false);
+  }
+
+  async function removeCredential(id: string) {
+    setDeleting(id); setMessage("");
+    const response = await fetch(`/api/credentials/${id}`, { method: "DELETE" });
+    const data = await response.json();
+    if (!response.ok) setMessage(data.error || "Unable to delete credential.");
+    else { setCredentials((current) => current.filter((credential) => credential.id !== id)); setMessage("Credential deleted."); }
+    setDeleting(null);
   }
 
   return (
@@ -69,7 +76,7 @@ export default function CredentialsPage() {
             </section>
             <section className="card">
               <div className="card-head"><h3>Stored credentials</h3><span className="badge">Secrets hidden</span></div>
-              {busy ? <div className="empty"><Loader2 className="spin" size={18}/></div> : credentials.length === 0 ? <div className="empty">No credentials yet.</div> : <div className="list">{credentials.map((credential) => <div className="list-row" key={credential.id}><div><strong>{credential.name}</strong><br/><small>{credential.provider} · added {new Date(credential.createdAt).toLocaleDateString()}</small></div><span className="badge">Encrypted</span></div>)}</div>}
+              {busy ? <div className="empty"><Loader2 className="spin" size={18}/></div> : credentials.length === 0 ? <div className="empty">No credentials yet.</div> : <div className="list">{credentials.map((credential) => <div className="list-row" key={credential.id}><div><strong>{credential.name}</strong><br/><small>{credential.provider} · added {new Date(credential.createdAt).toLocaleDateString()}</small></div><div style={{display:"flex",alignItems:"center",gap:8}}><span className="badge">Encrypted</span><button className="btn danger-icon" onClick={() => removeCredential(credential.id)} disabled={deleting === credential.id} aria-label={`Delete ${credential.name}`}>{deleting === credential.id ? <Loader2 className="spin" size={14}/> : <Trash2 size={14}/>}</button></div></div>)}</div>}
             </section>
           </div>
         </section>
