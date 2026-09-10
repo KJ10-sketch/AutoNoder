@@ -43,7 +43,7 @@ model Account {
   user                  User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   accessToken           String?
   refreshToken          String?
-  idToken                String?
+  idToken               String?
   accessTokenExpiresAt  DateTime?
   refreshTokenExpiresAt DateTime?
   scope                 String?
@@ -92,20 +92,30 @@ model Credential {
 }
 
 model Execution {
-  id         String         @id @default(cuid())
+  id         String          @id @default(cuid())
   userId     String
   workflowId String
-  user       User           @relation(fields: [userId], references: [id], onDelete: Cascade)
-  workflow   Workflow       @relation(fields: [workflowId], references: [id], onDelete: Cascade)
+  user       User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  workflow   Workflow        @relation(fields: [workflowId], references: [id], onDelete: Cascade)
   status     ExecutionStatus @default(RUNNING)
   input      Json?
   output     Json?
   error      String?
-  startedAt  DateTime       @default(now())
+  startedAt  DateTime        @default(now())
   finishedAt DateTime?
   @@index([workflowId, startedAt])
   @@index([userId, startedAt])
 }
 
-enum WorkflowStatus { DRAFT ACTIVE PAUSED }
-enum ExecutionStatus { RUNNING SUCCESS FAILED CANCELED }
+enum WorkflowStatus {
+  DRAFT
+  ACTIVE
+  PAUSED
+}
+
+enum ExecutionStatus {
+  RUNNING
+  SUCCESS
+  FAILED
+  CANCELED
+}
