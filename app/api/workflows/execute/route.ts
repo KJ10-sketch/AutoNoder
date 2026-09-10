@@ -1,5 +1,6 @@
 import { headers } from "next/headers";
 import { NextResponse } from "next/server";
+import { Prisma } from "@prisma/client";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { executeWorkflow } from "@/lib/workflow/engine";
@@ -23,7 +24,9 @@ export async function POST(request: Request) {
       data: {
         userId: session.user.id,
         workflowId: workflow.id,
-        input: body.input ?? null,
+        ...(body.input !== undefined
+          ? { input: body.input as Prisma.InputJsonValue }
+          : {}),
       },
     });
 
@@ -41,7 +44,7 @@ export async function POST(request: Request) {
         where: { id: execution.id },
         data: {
           status: "SUCCESS",
-          output: context.results,
+          output: context.results as Prisma.InputJsonValue,
           finishedAt: new Date(),
         },
       });
