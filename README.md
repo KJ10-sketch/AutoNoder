@@ -11,21 +11,23 @@ AutoNoder contains an end-to-end application core:
 - React Flow visual workflow editor
 - Node inspector for webhook, schedule, AI, HTTP, database, and email nodes
 - Persistent workflow create/read/update/delete API
+- One-click workflow duplication
 - Better Auth email/password sign-up and sign-in UI
 - Prisma/PostgreSQL data model for users, auth sessions, workflows, credentials, and executions
 - AES-256-GCM credential encryption utility
 - Graph validation and topological workflow execution engine
-- HTTP Request execution with configurable headers and credential injection
+- HTTP Request execution with configurable headers, credentials, timeouts, and outbound-target protection
 - OpenAI, Anthropic, and Google Gemini AI executor adapters
 - Prompt interpolation for `{{input}}` and `{{results}}`
-- Application database read/create/update/delete actions for supported models
+- Database action adapter boundary ready for provider-specific operations
 - Resend-compatible email delivery action
 - Persisted execution records with success/failure states
-- Live-refreshing execution history with failure visibility
+- Live-refreshing execution history and per-execution detail pages
 - Inngest durable/background workflow execution boundary
 - Scheduled workflow dispatcher
-- Authenticated optional webhook secrets and payload-size protection
+- Optional webhook authentication and payload-size protection
 - GitHub Actions production build check
+- Docker and Docker Compose production packaging
 - Environment-variable contract for database, auth, AI, payments, Inngest, email, and observability services
 
 ## Architecture
@@ -48,9 +50,13 @@ Email delivery uses a stored credential with `apiKey` and `from`, or `RESEND_API
 
 For durable/background and scheduled execution, configure the Inngest event/signing keys. Polar and Sentry remain environment-driven production integrations and should be enabled only after their provider accounts are configured.
 
+## Docker
+
+The repository includes a standalone Next.js Docker image and a PostgreSQL-backed `docker-compose.yml` for a self-hosted starting point. Replace the placeholder database password and auth secret before exposing the stack publicly.
+
 ## Production deployment
 
-AutoNoder is a standard Next.js application and can be deployed to a Next.js-compatible host such as Vercel, with PostgreSQL and Inngest configured as external services.
+AutoNoder is a standard Next.js application and can be deployed to a Next.js-compatible host such as Vercel, with PostgreSQL and Inngest configured as external services. The Docker image can also be used on a VPS or container platform.
 
 Required production variables:
 
