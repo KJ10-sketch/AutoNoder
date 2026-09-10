@@ -27,7 +27,7 @@ export const dispatchScheduledWorkflows = inngest.createFunction(
       const now = Date.now();
       const workflows = await db.workflow.findMany({
         where: { status: "ACTIVE" },
-        select: { id: true, userId: true, nodes: true, updatedAt: true },
+        select: { id: true, userId: true, nodes: true },
       });
 
       let dispatched = 0;
@@ -35,8 +35,15 @@ export const dispatchScheduledWorkflows = inngest.createFunction(
         const config = getScheduleConfig(workflow.nodes as unknown[]);
         if (!config) continue;
 
+        const latestExecution = await db.execution.findFirst({
+          where: { workflowId: workflow.id },
+          orderBy: { startedAt: "desc" },
+          select: { startedAt: true },
+        });
+
+        const lastRunAt = latestExecution?.startedAt.getTime() ?? 0;
         const intervalMs = config.intervalMinutes * 60_000;
-        if (now - workflow.updatedAt.getTime() < intervalMs) continue;
+        if (latestExecution && now - lastRunAt < intervalMs) continue;
 
         await inngest.send({
           name: "autonoder/workflow.execute",
