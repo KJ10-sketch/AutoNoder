@@ -4,25 +4,31 @@ AI-powered workflow automation platform based on the Nodebase architecture descr
 
 ## Current build
 
-AutoNoder now contains an end-to-end application core:
+AutoNoder contains an end-to-end application core:
 
 - Next.js + TypeScript App Router
 - Responsive dashboard and workflow catalog
 - React Flow visual workflow editor
+- Node inspector for webhook, schedule, AI, HTTP, database, and email nodes
 - Persistent workflow create/read/update/delete API
 - Better Auth email/password sign-up and sign-in UI
 - Prisma/PostgreSQL data model for users, auth sessions, workflows, credentials, and executions
 - AES-256-GCM credential encryption utility
 - Graph validation and topological workflow execution engine
-- Real HTTP Request executor
-- OpenAI and Anthropic AI executor adapters
+- HTTP Request execution with configurable headers and credential injection
+- OpenAI, Anthropic, and Google Gemini AI executor adapters
+- Prompt interpolation for `{{input}}` and `{{results}}`
+- Application database read/create/update/delete actions for supported models
+- Resend-compatible email delivery action
 - Persisted execution records with success/failure states
-- Execution history UI
+- Live-refreshing execution history with failure visibility
 - Inngest durable/background workflow execution boundary
-- Automated GitHub Actions build check
-- Environment-variable contract for database, auth, AI, payments, Inngest, and observability services
+- Scheduled workflow dispatcher
+- Authenticated optional webhook secrets and payload-size protection
+- GitHub Actions production build check
+- Environment-variable contract for database, auth, AI, payments, Inngest, email, and observability services
 
-## Architecture direction
+## Architecture
 
 The implementation follows the supplied Part 1 and Part 2 specification: workflows are represented as nodes and connections, execution is ordered through the graph, and node behavior is delegated to registered executors. Inngest is the durable/background execution boundary, Prisma is the persistence layer, and provider credentials are isolated from workflow definitions.
 
@@ -36,7 +42,37 @@ The implementation follows the supplied Part 1 and Part 2 specification: workflo
 6. Start the app with `npm run dev`.
 7. Open `/sign-in`, create an account, then create a workflow from the dashboard.
 
-For AI execution, configure `OPENAI_API_KEY` or `ANTHROPIC_API_KEY`. Hosted Inngest, Polar, Sentry, and additional production integrations activate when their corresponding credentials are configured.
+AI nodes can use stored encrypted credentials or the server environment variables `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, and `GOOGLE_GENERATIVE_AI_API_KEY`.
+
+Email delivery uses a stored credential with `apiKey` and `from`, or `RESEND_API_KEY` plus `EMAIL_FROM`.
+
+For durable/background and scheduled execution, configure the Inngest event/signing keys. Polar and Sentry remain environment-driven production integrations and should be enabled only after their provider accounts are configured.
+
+## Production deployment
+
+AutoNoder is a standard Next.js application and can be deployed to a Next.js-compatible host such as Vercel, with PostgreSQL and Inngest configured as external services.
+
+Required production variables:
+
+- `DATABASE_URL`
+- `BETTER_AUTH_SECRET`
+- `BETTER_AUTH_URL`
+- `INNGEST_EVENT_KEY`
+- `INNGEST_SIGNING_KEY`
+
+Optional integration variables:
+
+- `OPENAI_API_KEY`
+- `ANTHROPIC_API_KEY`
+- `GOOGLE_GENERATIVE_AI_API_KEY`
+- `RESEND_API_KEY`
+- `EMAIL_FROM`
+- `POLAR_ACCESS_TOKEN`
+- `POLAR_WEBHOOK_SECRET`
+- `NEXT_PUBLIC_SENTRY_DSN`
+- `SENTRY_AUTH_TOKEN`
+
+Never commit real secrets, database URLs, API keys, or provider tokens to GitHub.
 
 ## Source specification
 
