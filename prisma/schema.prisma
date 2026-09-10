@@ -1,0 +1,76 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String       @id @default(cuid())
+  email         String       @unique
+  name          String?
+  image         String?
+  workflows     Workflow[]
+  credentials   Credential[]
+  executions    Execution[]
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+}
+
+model Workflow {
+  id            String       @id @default(cuid())
+  userId        String
+  user          User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name          String
+  description   String?
+  status        WorkflowStatus @default(DRAFT)
+  nodes         Json
+  connections   Json
+  executions    Execution[]
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+  @@index([userId, updatedAt])
+}
+
+model Credential {
+  id            String       @id @default(cuid())
+  userId        String
+  user          User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name          String
+  provider      String
+  encryptedData String
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+  @@index([userId, provider])
+}
+
+model Execution {
+  id            String          @id @default(cuid())
+  userId        String
+  workflowId    String
+  user          User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  workflow      Workflow         @relation(fields: [workflowId], references: [id], onDelete: Cascade)
+  status        ExecutionStatus  @default(RUNNING)
+  input         Json?
+  output        Json?
+  error         String?
+  startedAt     DateTime         @default(now())
+  finishedAt    DateTime?
+  @@index([workflowId, startedAt])
+  @@index([userId, startedAt])
+}
+
+enum WorkflowStatus {
+  DRAFT
+  ACTIVE
+  PAUSED
+}
+
+enum ExecutionStatus {
+  RUNNING
+  SUCCESS
+  FAILED
+  CANCELED
+}
