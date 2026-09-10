@@ -9,60 +9,40 @@ export const runWorkflow = inngest.createFunction(
   { id: "run-workflow", retries: 3 },
   { event: "autonoder/workflow.execute" },
   async ({ event, step }) => {
-    const execution = await step.run("create-execution", async () =>
-      db.execution.create({
-        data: {
-          userId: event.data.userId,
-          workflowId: event.data.workflowId,
-          ...(event.data.input !== undefined
-            ? { input: event.data.input as Prisma.InputJsonValue }
-            : {}),
-        },
-      })
-    );
+    const execution = await step.run("create-execution", async () => db.execution.create({
+      data: {
+        userId: event.data.userId,
+        workflowId: event.data.workflowId,
+        ...(event.data.input !== undefined ? { input: event.data.input as Prisma.InputJsonValue } : {}),
+      },
+    }));
 
     try {
       const result = await step.run("execute-workflow", async () => {
-        const workflow = await db.workflow.findFirst({
-          where: { id: event.data.workflowId, userId: event.data.userId },
-        });
+        const workflow = await db.workflow.findFirst({ where: { id: event.data.workflowId, userId: event.data.userId } });
         if (!workflow) throw new Error("Workflow not found.");
-
         const definition: WorkflowDefinition = {
-          nodes: workflow.nodes as WorkflowDefinition["nodes"],
-          connections: workflow.connections as WorkflowDefinition["connections"],
+          nodes: workflow.nodes as unknown as WorkflowDefinition["nodes"],
+          connections: workflow.connections as unknown as WorkflowDefinition["connections"],
         };
-        return executeWorkflow(
-          definition,
-          event.data.input ?? null,
-          createExecutorRegistry(event.data.userId),
-        );
+        return executeWorkflow(definition, event.data.input ?? null, createExecutorRegistry(event.data.userId));
       });
 
       await step.run("mark-success", async () => {
         await db.execution.update({
           where: { id: execution.id },
-          data: {
-            status: "SUCCESS",
-            output: result.results as Prisma.InputJsonValue,
-            finishedAt: new Date(),
-          },
+          data: { status: "SUCCESS", output: result.results as Prisma.InputJsonValue, finishedAt: new Date() },
         });
       });
-
       return { executionId: execution.id, status: "SUCCESS" };
     } catch (error) {
       await step.run("mark-failed", async () => {
         await db.execution.update({
           where: { id: execution.id },
-          data: {
-            status: "FAILED",
-            error: error instanceof Error ? error.message : "Unknown error",
-            finishedAt: new Date(),
-          },
+          data: { status: "FAILED", error: error instanceof Error ? error.message : "Unknown error", finishedAt: new Date() },
         });
       });
       throw error;
     }
-  }
+  },
 );
