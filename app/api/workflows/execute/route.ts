@@ -15,51 +15,34 @@ export async function POST(request: Request) {
     const body = (await request.json()) as { workflowId: string; input?: unknown };
     if (!body.workflowId) return NextResponse.json({ error: "workflowId is required." }, { status: 400 });
 
-    const workflow = await db.workflow.findFirst({
-      where: { id: body.workflowId, userId: session.user.id },
-    });
+    const workflow = await db.workflow.findFirst({ where: { id: body.workflowId, userId: session.user.id } });
     if (!workflow) return NextResponse.json({ error: "Workflow not found." }, { status: 404 });
 
     const execution = await db.execution.create({
       data: {
         userId: session.user.id,
         workflowId: workflow.id,
-        ...(body.input !== undefined
-          ? { input: body.input as Prisma.InputJsonValue }
-          : {}),
+        ...(body.input !== undefined ? { input: body.input as Prisma.InputJsonValue } : {}),
       },
     });
 
     try {
       const definition: WorkflowDefinition = {
-        nodes: workflow.nodes as WorkflowDefinition["nodes"],
-        connections: workflow.connections as WorkflowDefinition["connections"],
+        nodes: workflow.nodes as unknown as WorkflowDefinition["nodes"],
+        connections: workflow.connections as unknown as WorkflowDefinition["connections"],
       };
-      const context = await executeWorkflow(
-        definition,
-        body.input ?? null,
-        createExecutorRegistry(session.user.id),
-      );
+      const context = await executeWorkflow(definition, body.input ?? null, createExecutorRegistry(session.user.id));
       const updated = await db.execution.update({
         where: { id: execution.id },
-        data: {
-          status: "SUCCESS",
-          output: context.results as Prisma.InputJsonValue,
-          finishedAt: new Date(),
-        },
+        data: { status: "SUCCESS", output: context.results as Prisma.InputJsonValue, finishedAt: new Date() },
       });
       return NextResponse.json({ ok: true, execution: updated, context });
     } catch (error) {
       const message = error instanceof Error ? error.message : "Workflow execution failed.";
-      const updated = await db.execution.update({
-        where: { id: execution.id },
-        data: { status: "FAILED", error: message, finishedAt: new Date() },
-      });
+      const updated = await db.execution.update({ where: { id: execution.id }, data: { status: "FAILED", error: message, finishedAt: new Date() } });
       return NextResponse.json({ ok: false, execution: updated, error: message }, { status: 500 });
     }
   } catch (error) {
-    return NextResponse.json({
-      error: error instanceof Error ? error.message : "Workflow execution failed.",
-    }, { status: 500 });
+    return NextResponse.json({ error: error instanceof Error ? error.message : "Workflow execution failed." }, { status: 500 });
   }
 }
