@@ -1,0 +1,44 @@
+services:
+  postgres:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: autonoder
+      POSTGRES_USER: autonoder
+      POSTGRES_PASSWORD: change-this-password
+    volumes:
+      - autonoder-postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U autonoder -d autonoder"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  app:
+    build: .
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "3000:3000"
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      DATABASE_URL: postgresql://autonoder:change-this-password@postgres:5432/autonoder?schema=public
+      BETTER_AUTH_SECRET: replace-with-a-long-random-secret
+      BETTER_AUTH_URL: http://localhost:3000
+      INNGEST_EVENT_KEY: ""
+      INNGEST_SIGNING_KEY: ""
+      OPENAI_API_KEY: ""
+      ANTHROPIC_API_KEY: ""
+      GOOGLE_GENERATIVE_AI_API_KEY: ""
+      POLAR_ACCESS_TOKEN: ""
+      POLAR_WEBHOOK_SECRET: ""
+      RESEND_API_KEY: ""
+      SENTRY_DSN: ""
+      SENTRY_AUTH_TOKEN: ""
+      NEXT_PUBLIC_SENTRY_DSN: ""
+
+volumes:
+  autonoder-postgres:
