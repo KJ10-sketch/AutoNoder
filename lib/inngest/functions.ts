@@ -1,3 +1,4 @@
+import { Prisma } from "@prisma/client";
 import { inngest } from "./client";
 import { db } from "@/lib/db";
 import { executeWorkflow } from "@/lib/workflow/engine";
@@ -13,7 +14,9 @@ export const runWorkflow = inngest.createFunction(
         data: {
           userId: event.data.userId,
           workflowId: event.data.workflowId,
-          input: event.data.input ?? null,
+          ...(event.data.input !== undefined
+            ? { input: event.data.input as Prisma.InputJsonValue }
+            : {}),
         },
       })
     );
@@ -41,7 +44,7 @@ export const runWorkflow = inngest.createFunction(
           where: { id: execution.id },
           data: {
             status: "SUCCESS",
-            output: result.results,
+            output: result.results as Prisma.InputJsonValue,
             finishedAt: new Date(),
           },
         });
