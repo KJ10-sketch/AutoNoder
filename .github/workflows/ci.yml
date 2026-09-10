@@ -26,3 +26,5 @@ jobs:
           DATABASE_URL: postgresql://ci:ci@localhost:5432/autonoder?schema=public
           BETTER_AUTH_SECRET: ci-build-secret-at-least-32-characters-long
           BETTER_AUTH_URL: http://localhost:3000
+      - name: Build Docker image
+        run: docker build --tag autonoder:ci .
