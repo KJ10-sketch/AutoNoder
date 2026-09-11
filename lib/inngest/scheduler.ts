@@ -42,7 +42,8 @@ export const dispatchScheduledWorkflows = inngest.createFunction(
         });
 
         const lastRunAt = latestExecution?.startedAt.getTime() ?? 0;
-        const intervalMs = config.intervalMinutes * 60_000;
+        const intervalMinutes = config.intervalMinutes ?? 5;
+        const intervalMs = intervalMinutes * 60_000;
         if (latestExecution && now - lastRunAt < intervalMs) continue;
 
         await inngest.send({
