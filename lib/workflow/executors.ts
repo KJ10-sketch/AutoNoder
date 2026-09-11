@@ -6,6 +6,12 @@ function asString(value: unknown): string | undefined {
   return typeof value === "string" && value.trim() ? value.trim() : undefined;
 }
 
+function asPositiveInt(value: unknown, fallback: number, max = 100): number {
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed) || parsed < 1) return fallback;
+  return Math.min(Math.floor(parsed), max);
+}
+
 async function getCredential(userId: string, credentialId: unknown): Promise<Record<string, string> | null> {
   const id = asString(credentialId);
   if (!id) return null;
@@ -22,9 +28,9 @@ function resolvePrompt(prompt: string, context: { input: unknown; results: Recor
 
 function validateHttpTarget(rawUrl: string): string {
   const parsed = new URL(rawUrl);
-  if (!['http:', 'https:'].includes(parsed.protocol)) throw new Error("HTTP Request URL must use http or https.");
+  if (!["http:", "https:"].includes(parsed.protocol)) throw new Error("HTTP Request URL must use http or https.");
   const hostname = parsed.hostname.toLowerCase();
-  if (hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '::1' || hostname.endsWith('.localhost') || hostname.endsWith('.local')) {
+  if (hostname === "localhost" || hostname === "127.0.0.1" || hostname === "::1" || hostname.endsWith(".localhost") || hostname.endsWith(".local")) {
     throw new Error("HTTP Request cannot target localhost or local domains.");
   }
   if (/^(10\.|127\.|169\.254\.|192\.168\.|172\.(1[6-9]|2\d|3[0-1])\.)/.test(hostname)) {
@@ -36,9 +42,14 @@ function validateHttpTarget(rawUrl: string): string {
 async function fetchWithTimeout(input: RequestInfo | URL, init: RequestInit = {}, timeoutMs = 30000) {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), timeoutMs);
-  try { return await fetch(input, { ...init, signal: controller.signal }); }
-  catch (error) { if (error instanceof DOMException && error.name === 'AbortError') throw new Error(`Request timed out after ${timeoutMs / 1000}s.`); throw error; }
-  finally { clearTimeout(timeout); }
+  try {
+    return await fetch(input, { ...init, signal: controller.signal });
+  } catch (error) {
+    if (error instanceof DOMException && error.name === "AbortError") throw new Error(`Request timed out after ${timeoutMs / 1000}s.`);
+    throw error;
+  } finally {
+    clearTimeout(timeout);
+  }
 }
 
 export function createExecutorRegistry(userId: string): ExecutorRegistry {
@@ -107,8 +118,38 @@ export function createExecutorRegistry(userId: string): ExecutorRegistry {
     },
     database: {
       async execute(node, context) {
-        const operation = asString(node.config.operation) ?? "read";
-        return { output: { operation, input: context.input, message: "Database node requires a configured adapter for an external database." } };
+        const operation = asString(node.config.operation) ?? "latestExecution";
+        const workflowId = asString(node.config.workflowId);
+        if (!workflowId) throw new Error("Database node requires a workflowId. Use {{input.workflowId}} by passing it from a trigger if appropriate.");
+
+        switch (operation) {
+          case "latestExecution": {
+            const execution = await db.execution.findFirst({
+              where: { workflowId, userId },
+              orderBy: { startedAt: "desc" },
+              select: { id: true, status: true, input: true, output: true, error: true, startedAt: true, finishedAt: true },
+            });
+            return { output: execution };
+          }
+          case "listExecutions": {
+            const limit = asPositiveInt(node.config.limit, 20);
+            const executions = await db.execution.findMany({
+              where: { workflowId, userId },
+              orderBy: { startedAt: "desc" },
+              take: limit,
+              select: { id: true, status: true, input: true, output: true, error: true, startedAt: true, finishedAt: true },
+            });
+            return { output: executions };
+          }
+          case "countExecutions": {
+            const count = await db.execution.count({ where: { workflowId, userId } });
+            return { output: { count } };
+          }
+          case "context":
+            return { output: { input: context.input, results: context.results } };
+          default:
+            throw new Error(`Unsupported database operation: ${operation}`);
+        }
       },
     },
     email: {
