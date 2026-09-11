@@ -20,6 +20,8 @@ jobs:
         run: npm install
       - name: Generate Prisma client
         run: npm run db:generate
+      - name: Workflow engine tests
+        run: npm test
       - name: Build
         run: npm run build
         env:
