@@ -21,8 +21,8 @@ export default function SignInPage() {
     setError("");
 
     const result = mode === "sign-in"
-      ? await authClient.signIn.email({ email, password, rememberMe: true })
-      : await authClient.signUp.email({ name, email, password, rememberMe: true });
+      ? await authClient.signIn.email({ email, password })
+      : await authClient.signUp.email({ name, email, password });
 
     setBusy(false);
     if (result.error) {
