@@ -1,5 +1,6 @@
 import { headers } from "next/headers";
 import { NextResponse } from "next/server";
+import { Prisma } from "@prisma/client";
 import { z } from "zod";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
@@ -33,7 +34,16 @@ export async function POST(request: Request) {
   try {
     const user = await requireUser();
     const payload = workflowSchema.parse(await request.json());
-    const workflow = await db.workflow.create({ data: { ...payload, status: payload.status ?? "DRAFT", userId: user.id } });
+    const workflow = await db.workflow.create({
+      data: {
+        name: payload.name,
+        description: payload.description,
+        status: payload.status ?? "DRAFT",
+        userId: user.id,
+        nodes: payload.nodes as Prisma.InputJsonValue,
+        connections: payload.connections as Prisma.InputJsonValue,
+      },
+    });
     return NextResponse.json({ workflow }, { status: 201 });
   } catch (error) {
     if (error instanceof Error && error.message === "UNAUTHORIZED") return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
