@@ -8,18 +8,22 @@ datasource db {
 }
 
 model User {
-  id            String       @id @default(cuid())
-  name          String
-  email         String       @unique
-  emailVerified Boolean      @default(false)
-  image         String?
-  workflows     Workflow[]
-  credentials   Credential[]
-  executions    Execution[]
-  sessions      Session[]
-  accounts      Account[]
-  createdAt     DateTime     @default(now())
-  updatedAt     DateTime     @updatedAt
+  id                     String       @id @default(cuid())
+  name                   String
+  email                  String       @unique
+  emailVerified          Boolean      @default(false)
+  image                  String?
+  polarCustomerId        String?      @unique
+  polarSubscriptionId    String?      @unique
+  subscriptionStatus     String?
+  subscriptionProductId  String?
+  workflows              Workflow[]
+  credentials            Credential[]
+  executions             Execution[]
+  sessions               Session[]
+  accounts               Account[]
+  createdAt              DateTime     @default(now())
+  updatedAt              DateTime     @updatedAt
 }
 
 model Session {
